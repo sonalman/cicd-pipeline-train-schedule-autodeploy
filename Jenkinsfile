@@ -1,6 +1,9 @@
 pipeline {
     agent any
-    
+    environment {
+        //be sure to replace "bhavukm" with your own Docker Hub username
+        DOCKER_IMAGE_NAME = "sonalman88/train-schedule"
+    }
     stages {
         stage('Build') {
             steps {
@@ -9,19 +12,30 @@ pipeline {
                 archiveArtifacts artifacts: 'dist/trainSchedule.zip'
             }
         }
-        stage('Docker Build') {
-           steps {
-              
-                sh 'docker build -t "sonalman88/train-schedule:latest" .' 
-                              
-          }
-        }
-        
-        stage('Publish image to Docker Hub') {
+        stage('Build Docker Image') {
+            when {
+                branch 'master'
+            }
             steps {
-                withDockerRegistry([ credentialsId: "dockerhub-cred-mine", url: "" ]) {
-                sh  'docker push sonalman88/train-schedule:latest'
-                 }
+                script {
+                    app = docker.build(DOCKER_IMAGE_NAME)
+                    app.inside {
+                        sh 'echo Hello, World!'
+                    }
+                }
+            }
+        }
+        stage('Push Docker Image') {
+            when {
+                branch 'master'
+            }
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker_hub_login') {
+                        app.push("${env.BUILD_NUMBER}")
+                        app.push("latest")
+                    }
+                }
             }
         }
         stage('CanaryDeploy') {
