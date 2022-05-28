@@ -24,8 +24,9 @@ pipeline {
             steps {
                 withDockerRegistry([ credentialsId: "dockerhub-cred-mine", url: "" ]) {
                 sh  'docker push sonalman88/train-schedule:latest'
+                 }
+            }
         }
-                
         stage('CanaryDeploy') {
             when {
                 branch 'master'
