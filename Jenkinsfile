@@ -12,30 +12,20 @@ pipeline {
                 archiveArtifacts artifacts: 'dist/trainSchedule.zip'
             }
         }
-        stage('Build Docker Image') {
-           
-            steps {
-                script {
-                    app = docker.build(DOCKER_IMAGE_NAME)
-                    app.inside {
-                        sh 'echo Hello, World!'
-                    }
-                }
-            }
+        stage('Docker Build') {
+           steps {
+              
+                sh 'docker build -t "sonalman88/train-schedule:latest" .' 
+                              
+          }
         }
-        stage('Push Docker Image') {
-            when {
-                branch 'master'
-            }
+        
+        stage('Publish image to Docker Hub') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-cred-mine') {
-                        app.push("${env.BUILD_NUMBER}")
-                        app.push("latest")
-                    }
-                }
-            }
+                withDockerRegistry([ credentialsId: "dockerhub-cred-mine", url: "" ]) {
+                sh  'docker push sonalman88/train-schedule:latest'
         }
+                
         stage('CanaryDeploy') {
             when {
                 branch 'master'
